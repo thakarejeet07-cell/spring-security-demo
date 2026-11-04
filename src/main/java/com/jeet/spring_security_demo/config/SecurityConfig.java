@@ -18,8 +18,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        // every request must be authenticated
-        http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+//        // every request must be authenticated
+//        http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/h2-console/**").permitAll()
+                .anyRequest().authenticated());
+
+        // H2 console runs in a frame
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         // keep the browser login form
         http.formLogin(Customizer.withDefaults());
