@@ -1,68 +1,43 @@
 package com.jeet.spring_security_demo.config;
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private final UserDetailsService userDetailsService;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-//        // every request must be authenticated
-//        http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
-
-        http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll()
-                .anyRequest().authenticated());
-
-        // H2 console runs in a frame
-        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
-
-        // keep the browser login form
-        http.formLogin(Customizer.withDefaults());
-
-        // allow Basic Auth (Postman)
-        http.httpBasic(Customizer.withDefaults());
-
-        // disable CSRF (fine for a learning project / stateless APIs, not for browser apps that use cookies)
-        http.csrf(csrf -> csrf.disable());
-
-
-//        http.csrf().disable()
-//                .authorizeHttpRequests().anyRequest().authenticated()
-//                .and()
-//                .httpBasic();
-
-        return http.build();
+    public SecurityConfig(UserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        UserDetails user1 = User
-                .withDefaultPasswordEncoder()
-                .username("jeet")
-                .password("jeet123")
-                .roles("USER")
-                .build();
+        http.csrf(csrf -> csrf.disable());
 
-        UserDetails user2 = User
-                .withDefaultPasswordEncoder()
-                .username("admin")
-                .password("admin123")
-                .roles("ADMIN")
-                .build();
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers("register").permitAll()
+                .anyRequest().authenticated());
 
-        return new InMemoryUserDetailsManager(user1, user2);
+        http.formLogin(Customizer.withDefaults());
+        http.httpBasic(Customizer.withDefaults());
+
+        return http.build();
+    }
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
+        return provider;
     }
 }
